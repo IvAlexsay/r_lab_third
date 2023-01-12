@@ -1,0 +1,73 @@
+---
+title: "report_lab3"
+output: html_document
+date: "2023-01-12"
+---
+## Task 9
+Удалите строки, в которых есть пропущенные значения и приведите данные к формату tidydata. Отобразите динамику лесовосстановления по годам с помощью линейного графика для любого из федеральных округов, обозначив субъекты федерации разными цветами. Подпишите значения на графике. Отрегулируйте местоположение подписей так, чтобы рисунок был максимально наглядным. Придумайте новые назания графика и осей.
+```{r}
+library(stringr)
+library(ggplot2)
+library(tidyr)
+
+df <- read.csv("reforest.csv")
+df[df == "-"] <- NA
+df <- na.omit(df)
+start <- which(df$Region == "Северо-Кавказский федеральный округ")
+end <- which(df$Region == "Приволжский федеральный округ")
+regions <- df[(start + 1):(end - 1), ]
+
+regions[,3:9] <- sapply(regions[,3:9], as.numeric)
+
+regions <- pivot_longer(regions, !Region, names_to = "year", values_to = "value")
+
+g <- ggplot(regions, aes(year, value, group = Region, colour = Region)) +
+  geom_point() +
+  geom_line() +
+  geom_text(aes(x = year, y = value, label = value), nudge_y = 0.05) +
+  labs(x = "Год", y = "Площадь (тыс. га)", 
+              title = "Динамика лесовосстановления по годам")
+
+print(g)
+```
+
+## Task 14
+Объедините data.frames по идентификаторам сортов. Исключите те сорта, для которых есть пропущенные значения. Для всех наблюдаемых величин из файла test_data1.txt (из первого дз), в которых содержится не более 80% пропущенных значений нарисовать гистограммы. Найтите корреляции Пирсона для количественных переменных. Постройте тепловую карту (heatmap).
+```{r}
+library(ggplot2)
+library(tidyr)
+
+df <- read.csv("data2.csv")
+df <- na.omit(df)
+tb <- read.table("data1.txt", header = TRUE, skip = 1)
+tb$X1 = NULL
+tb <- na.omit(tb)
+
+
+quality_signs_unf <- read.table("data1.txt", header = TRUE, skip = 1)
+quality_signs <- quality_signs_unf[, colnames(quality_signs_unf)[2:5]] |> drop_na()
+
+df <- pivot_longer(df, !X, names_to = "Sample", values_to = "Value") 
+df <- pivot_wider(df, names_from = X, values_from = Value)
+
+res <- merge(df, tb, by = "Sample")
+
+knitr::kable(res, format="html")
+
+```
+```{r}
+hist(tb$Height, main = "Histogram of height")
+```
+
+```{r}
+hist(tb$Protein, main = "Histogram of protein")
+```
+```{r}
+hist(tb$Oil, main = "Histogram of oil")
+```
+```{r}
+quant_tb <- tb[, 2:4]
+heatmap(cor(quant_tb))
+```
+
+
